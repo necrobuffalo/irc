@@ -73,7 +73,6 @@ Abstract          \"  See: "Instructions to RFC Authors [RFC2223BIS]"
 This file describes the protocol for an IRC client/server system for
 the networking protocols class at Portland State University.
 
-.bp
 .in 0
 Table of Contents
 
@@ -84,14 +83,14 @@ Table of Contents
       3.1. Nick message ...............................................3
       3.2. Join message ...............................................3
       3.3. Leave message ..............................................3
-      3.4. List message ...............................................3
-      3.5. Names message ..............................................3
-      3.6. Privmsg message ............................................3
-      3.7. Quit message ...............................................3
-      3.8. Keepalive message ..........................................3
+      3.4. List message ...............................................4
+      3.5. Names message ..............................................4
+      3.6. Privmsg message ............................................4
+      3.7. Quit message ...............................................4
+      3.8. Keepalive message ..........................................4
    4. Security Considerations .........................................4
    5. IANA Considerations .............................................4
-   6. References ......................................................6
+   6. References ......................................................5
 
 .bp
 .in 3 
@@ -209,8 +208,6 @@ user of the client.
 
 No actions are required from IANA as result of the publication of
 this document.
-
-.bp
 
 .in 0
 .nf

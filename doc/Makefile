@@ -1,2 +1,2 @@
 build:
-	nroff rfc > rfc.txt
+	nroff -ms rfc > rfc.txt
