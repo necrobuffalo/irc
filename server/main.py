@@ -2,10 +2,13 @@ from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor
 
+import string
+
 
 class IRC(LineReceiver):
-    def __init__(self, clients):
+    def __init__(self, clients, channels):
         self.clients = clients
+        self.channels = channels
         self.nick = None
 
     def connectionLost(self, reason):
@@ -56,16 +59,44 @@ class IRC(LineReceiver):
         self.sendLine("You are now known as {}".format(self.nick))
 
     def handle_JOIN(self, line):
-        pass
+        for chan in line.split(","):
+            if line.find("#") != 0:
+                self.error("Invalid channel name: {}".format(chan))
+                return
+
+        for chan in line.split(","):
+            if chan not in self.channels:
+                self.channels[chan] = set()
+
+            self.channels[chan].add(self)
+            # TODO send a success message
 
     def handle_PART(self, line):
-        pass
+        for chan in line.split(","):
+            if line.find("#") != 0:
+                self.error("Invalid channel name: {}".format(chan))
+                return
+
+        for chan in line.split(","):
+            if chan in self.channels:
+                self.channels[chan].discard(self)
+                # TODO send a success message
 
     def handle_LIST(self, line):
-        pass
+        self.sendLine("LIST {}".format(string.join(self.channels.keys(), ",")))
 
     def handle_NAMES(self, line):
-        pass
+        for chan in line.split(","):
+            if line.find("#") != 0:
+                self.error("Invalid channel name: {}".format(chan))
+                return
+
+        for chan in line.split(","):
+            if chan in self.channels:
+                names = ""
+                for client in self.channels[chan]:
+                    names = names + client.nick + ","
+                self.sendLine("NAMES {} {}".format(chan, names))
 
     def handle_PRIVMSG(self, line):
         pass
@@ -73,6 +104,10 @@ class IRC(LineReceiver):
     def handle_QUIT(self, line):
         if self.nick in self.clients:
             del self.clients[self.nick]
+
+        for chan in self.channels:
+            chan.discard(self)
+
         self.transport.loseConnection()
 
     def error(self, line):
@@ -82,9 +117,10 @@ class IRC(LineReceiver):
 class IRCFactory(Factory):
     def __init__(self):
         self.clients = {}
+        self.channels = {}
 
     def buildProtocol(self, addr):
-        return IRC(self.clients)
+        return IRC(self.clients, self.channels)
 
 
 reactor.listenTCP(9000, IRCFactory())
