@@ -6,7 +6,8 @@ import string
 
 
 class IRC(LineReceiver):
-    def __init__(self, clients, channels):
+    def __init__(self, addr, clients, channels):
+        self.addr = addr
         self.clients = clients
         self.channels = channels
         self.nick = None
@@ -14,6 +15,9 @@ class IRC(LineReceiver):
     def connectionLost(self, reason):
         if self.nick in self.clients:
             del self.clients[self.nick]
+        for chan in self.channels.itervalues():
+            chan.discard(self)
+        print("Disconnected from {}".format(self.addr))
 
     def lineReceived(self, line):
         cmd = line.strip().partition(" ")
@@ -99,15 +103,18 @@ class IRC(LineReceiver):
                 self.sendLine("NAMES {} {}".format(chan, names))
 
     def handle_PRIVMSG(self, line):
-        pass
+        split = line.partition(" ")
+        for chan in split[0].split(","):
+            # send message to that channel
+            if line.find("#") == 0:
+                for client in self.channels[chan]:
+                    client.sendLine(
+                        "PRIVMSG {} {} {}".format(chan, self.nick, split[2]))
+            else:
+                self.clients[chan].sendLine(
+                    "PRIVMSG {} {} {}".format(chan, self.nick, split[2]))
 
     def handle_QUIT(self, line):
-        if self.nick in self.clients:
-            del self.clients[self.nick]
-
-        for chan in self.channels:
-            chan.discard(self)
-
         self.transport.loseConnection()
 
     def error(self, line):
@@ -120,7 +127,8 @@ class IRCFactory(Factory):
         self.channels = {}
 
     def buildProtocol(self, addr):
-        return IRC(self.clients, self.channels)
+        print("Connected to {}".format(addr))
+        return IRC(addr, self.clients, self.channels)
 
 
 reactor.listenTCP(9000, IRCFactory())
