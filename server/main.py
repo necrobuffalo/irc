@@ -59,8 +59,7 @@ class IRC(LineReceiver):
         # Record new nick
         self.nick = nick
         self.clients[nick] = self
-        # TODO send some kind of properly formatted success message
-        self.sendLine("You are now known as {}".format(self.nick))
+        self.sendLine("NICK {}".format(self.nick))
 
     def handle_JOIN(self, line):
         for chan in line.split(","):
@@ -73,7 +72,7 @@ class IRC(LineReceiver):
                 self.channels[chan] = set()
 
             self.channels[chan].add(self)
-            # TODO send a success message
+            self.sendLine("JOIN {}".format(chan))
 
     def handle_PART(self, line):
         for chan in line.split(","):
@@ -84,7 +83,9 @@ class IRC(LineReceiver):
         for chan in line.split(","):
             if chan in self.channels:
                 self.channels[chan].discard(self)
-                # TODO send a success message
+                self.sendLine("PART {}".format(chan))
+            else:
+                self.error("You are not in {}".format(chan))
 
     def handle_LIST(self, line):
         self.sendLine("LIST {}".format(string.join(self.channels.keys(), ",")))

@@ -1,25 +1,7 @@
 #!/usr/bin/env python
 
-# Copyright (c) Twisted Matrix Laboratories.
-# See LICENSE for details.
-"""
-This is an example of integrating curses with the twisted underlying
-select loop. Most of what is in this is insignificant -- the main piece
-of interest is the 'CursesStdIO' class.
-
-This class acts as file-descriptor 0, and is scheduled with the twisted
-select loop via reactor.addReader (once the curses class extends it
-of course). When there is input waiting doRead is called, and any
-input-oriented curses calls (ie. getch()) should be executed within this
-block.
-
-Remember to call nodelay(1) in curses, to make getch() non-blocking.
-
-To run the script::
-
-    $ python cursesclient.py
-
-"""
+# This is a modified/extended version of the Twisted curses client example.
+# Original example copyright (c) Twisted Matrix Laboratories.
 
 # System Imports
 import curses, time, traceback, sys
@@ -54,6 +36,8 @@ class CursesStdIO:
 class IRC(LineReceiver):
     """ A protocol object for IRC """
 
+    nick = None
+
     def __init__(self, screenObj):
         # screenObj should be 'stdscr' or a curses window/pad object
         self.screenObj = screenObj
@@ -62,7 +46,31 @@ class IRC(LineReceiver):
 
     def lineReceived(self, line):
         """ When receiving a line, add it to the output buffer """
-        self.screenObj.addLine(line)
+        #self.screenObj.addLine("DEBUG got line: {}".format(line))
+        cmd = line.strip().partition(" ")
+        if cmd[0] == "NICK":
+            self.nick = cmd[2]
+            self.screenObj.addLine("You are now known as {}".format(cmd[2]))
+        elif cmd[0] == "JOIN":
+            self.screenObj.addLine("Joined {}".format(cmd[2]))
+        elif cmd[0] == "PART":
+            self.screenObj.addLine("Left {}".format(cmd[2]))
+        elif cmd[0] == "LIST":
+            self.screenObj.addLine("Channels on this server: {}".format(cmd[2]))
+        elif cmd[0] == "NAMES":
+            split = cmd[2].partition(" ")
+            self.screenObj.addLine("In channel {}: {}".format(split[0], split[2]))
+        elif cmd[0] == "PRIVMSG":
+            split = cmd[2].partition(" ")
+            chan = split[0]
+            sender = split[2].partition(" ")[0]
+            received = split[2].partition(" ")[2]
+            if chan == self.nick:
+                self.screenObj.addLine("{} > {}".format(sender, received))
+            else:
+                self.screenObj.addLine("{}: {} > {}".format(chan, sender, received))
+        elif cmd[0] == "ERROR":
+            self.screenObj.addLine(cmd[2], 3)
 
     def connectionMade(self):
         self.screenObj.addLine("* CONNECTED *")
@@ -106,19 +114,23 @@ class Screen(CursesStdIO):
 
         curses.start_color()
 
-        # create color pair's 1 and 2
+        # create color pairs
+        # status bar
         curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_WHITE)
+        # normal message text
         curses.init_pair(2, curses.COLOR_CYAN, curses.COLOR_BLACK)
+        # error text
+        curses.init_pair(3, curses.COLOR_RED, curses.COLOR_BLACK)
 
         self.paintStatus(self.statusText)
 
     def connectionLost(self, reason):
         self.addLine("* DISCONNECTED *")
 
-    def addLine(self, text):
+    def addLine(self, text, color=2):
         """ add a line to the internal list of lines"""
 
-        self.lines.append(text)
+        self.lines.append((text, color))
         self.redisplayLines()
 
     def redisplayLines(self):
@@ -130,8 +142,8 @@ class Screen(CursesStdIO):
         i = 0
         index = len(self.lines) - 1
         while i < (self.rows - 3) and index >= 0:
-            self.stdscr.addstr(self.rows - 3 - i, 0, self.lines[index],
-                               curses.color_pair(2))
+            self.stdscr.addstr(self.rows - 3 - i, 0, self.lines[index][0],
+                               curses.color_pair(self.lines[index][1]))
             i = i + 1
             index = index - 1
         self.stdscr.refresh()
