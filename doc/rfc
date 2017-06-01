@@ -88,10 +88,10 @@ Table of Contents
       3.6. Privmsg message ............................................4
       3.7. Quit message ...............................................4
       3.8. Keepalive message ..........................................4
-   4. Server Messages .................................................
-      4.1. Error message ..............................................
-   5. Security Considerations .........................................4
-   6. IANA Considerations .............................................4
+   4. Server Messages .................................................4
+      4.1. Error message ..............................................5
+   5. Security Considerations .........................................5
+   6. IANA Considerations .............................................5
    7. References ......................................................5
 
 .bp
@@ -111,11 +111,11 @@ Communication using this protocol is done over TCP, with a default
 server port of 6667. All communication between client and server will
 be done over a persistent connection.
 
-Messages consist of a one word command, followed by optional parameters,
-and ended with a newline character.
+Messages consist of a one word command, followed by optional
+parameters, and ended with a newline character.
 
-All room names must start with a pound sign (#), client nicknames may not
-use this character.
+All room names must start with a pound sign (#), client nicknames
+may not use this character.
 
 .ti 0
 3. Client Messages
@@ -128,8 +128,8 @@ Parameters: <nickname>
 
 At the beginning of a client connection, the client should send a
 NICK message with the user's desired nickname. If the nick is already
-in use, the server should respond with an ERROR message. The nick must not
-start with a pound sign (#) as this indicates a room name.
+in use, the server should respond with an ERROR message. The nick
+must not start with a pound sign (#) as this indicates a room name.
 
 .ti 0
 3.2. Join message
@@ -137,11 +137,12 @@ start with a pound sign (#) as this indicates a room name.
    Command: JOIN
 Parameters: <room>{,<room>}
 
-The JOIN command is used to join a room or list of rooms. If the rooms do
-not already exist, the server will create them. On success, the server
-should respond to the original client and to each connected client in each
-room with JOIN <room> <nickname>. If the room name is invalid, the server
-should instead respond with an ERROR message.
+The JOIN command is used to join a room or list of rooms. If the
+rooms do not already exist, the server will create them. On success,
+the server should respond to the original client and to each
+connected client in each room with JOIN <room> <nickname>. If the
+room name is invalid, the server should instead respond with an ERROR
+message.
 
 .ti 0
 3.3. Leave message
@@ -150,16 +151,17 @@ should instead respond with an ERROR message.
 Parameters: <room>{,<room>}
 
 The PART command is used to leave a room or list of rooms. The server
-must respond with PART <room> <nickname> to the client and each client
-in each related room.
+must respond with PART <room> <nickname> to the client and each
+client in each related room.
 
 .ti 0
 3.4. List message
 
    Command: LIST
 
-The LIST command is used to display all channels on the server. The server
-should respond with LIST followed by a comma separated list of room names.
+The LIST command is used to display all channels on the server. The
+server should respond with LIST followed by a comma separated list of
+room names.
 
 .ti 0
 3.5. Names message
@@ -168,8 +170,8 @@ should respond with LIST followed by a comma separated list of room names.
 Parameters: <room>
 
 The NAMES command displays all nicknames in a given room. The server
-should respond with NAMES followed by the room name and a comma separated
-list of names.
+should respond with NAMES followed by the room name and a comma
+separated list of names.
 
 .ti 0
 3.6. Privmsg message
@@ -177,17 +179,17 @@ list of names.
    Command: PRIVMSG
 Parameters: <receiver>{,<receiver>} <text to be sent>
 
-The PRIVMSG command is used to send a message to a list of rooms or clients.
-The server should send PRIVMSG <channel or nick> <sender> <text to be sent>
-to each appropriate client or room.
+The PRIVMSG command is used to send a message to a list of rooms or
+clients. The server should send PRIVMSG <channel or nick> <sender>
+<text to be sent> to each appropriate client or room.
 
 .ti 0
 3.7. Quit message
 
    Command: QUIT
 
-The QUIT command is used to disconnect from the server. The server should
-immediately close the connection.
+The QUIT command is used to disconnect from the server. The server
+should immediately close the connection.
 
 .ti 0
 3.8. Keepalive message
@@ -195,10 +197,10 @@ immediately close the connection.
    Command: PING
    Command: PONG
 
-The PING command is used to determine if the connection has been lost. PING
-messages should be sent from the server periodically, and the recipient
-(server or client) must respond with a PONG within a set amount of time or
-the other party should close the connection.
+The PING command is used to determine if the connection has been
+lost. PING messages should be sent from the server periodically, and
+the recipient (server or client) must respond with a PONG within a
+set amount of time or the other party should close the connection.
 
 .ti 0
 4. Server messages
@@ -209,14 +211,14 @@ the other party should close the connection.
    Command: ERROR
 Parameters: <error text>
 
-The ERROR command should be sent by the server in case of a command that
-cannot be parsed or is otherwise inappropriate.
+The ERROR command should be sent by the server in case of a command
+that cannot be parsed or is otherwise inappropriate.
 
 .ti 0
 5.  Security Considerations
 
-All messages are sent in plaintext. Any encryption must be performed by the
-user of the client.
+All messages are sent in plaintext. Any encryption must be performed
+by the user of the client.
 
 .ti 0
 6.  IANA Considerations
