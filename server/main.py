@@ -22,7 +22,9 @@ class IRC(LineReceiver):
     def lineReceived(self, line):
         cmd = line.strip().partition(" ")
 
-        if cmd[0] == "NICK":
+        if cmd[0] == "PING":
+            self.handle_PING(cmd[2])
+        elif cmd[0] == "NICK":
             self.handle_NICK(cmd[2])
         elif cmd[0] == "QUIT":
             self.handle_QUIT(cmd[2])
@@ -72,7 +74,8 @@ class IRC(LineReceiver):
                 self.channels[chan] = set()
 
             self.channels[chan].add(self)
-            self.sendLine("JOIN {}".format(chan))
+            for client in self.channels[chan]:
+                client.sendLine("JOIN {} {}".format(chan, self.nick))
 
     def handle_PART(self, line):
         for chan in line.split(","):
@@ -82,8 +85,10 @@ class IRC(LineReceiver):
 
         for chan in line.split(","):
             if chan in self.channels:
+                for client in self.channels[chan]:
+                    client.sendLine("PART {} {}".format(chan, self.nick))
+
                 self.channels[chan].discard(self)
-                self.sendLine("PART {}".format(chan))
             else:
                 self.error("You are not in {}".format(chan))
 
@@ -107,13 +112,22 @@ class IRC(LineReceiver):
         split = line.partition(" ")
         for chan in split[0].split(","):
             # send message to that channel
-            if line.find("#") == 0:
+            if chan.find("#") == 0:
+                if chan not in self.channels:
+                    self.error("You are not in that channel.")
+                    continue
                 for client in self.channels[chan]:
                     client.sendLine(
                         "PRIVMSG {} {} {}".format(chan, self.nick, split[2]))
             else:
-                self.clients[chan].sendLine(
-                    "PRIVMSG {} {} {}".format(chan, self.nick, split[2]))
+                if chan in self.clients:
+                    self.clients[chan].sendLine(
+                        "PRIVMSG {} {} {}".format(chan, self.nick, split[2]))
+                else:
+                    self.error("That user is not on this server.")
+
+    def handle_PING(self, line):
+        self.sendLine("PONG")
 
     def handle_QUIT(self, line):
         self.transport.loseConnection()

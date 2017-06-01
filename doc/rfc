@@ -88,9 +88,11 @@ Table of Contents
       3.6. Privmsg message ............................................4
       3.7. Quit message ...............................................4
       3.8. Keepalive message ..........................................4
-   4. Security Considerations .........................................4
-   5. IANA Considerations .............................................4
-   6. References ......................................................5
+   4. Server Messages .................................................
+      4.1. Error message ..............................................
+   5. Security Considerations .........................................4
+   6. IANA Considerations .............................................4
+   7. References ......................................................5
 
 .bp
 .in 3 
@@ -126,7 +128,8 @@ Parameters: <nickname>
 
 At the beginning of a client connection, the client should send a
 NICK message with the user's desired nickname. If the nick is already
-in use, the server should respond with ERROR NICK.
+in use, the server should respond with an ERROR message. The nick must not
+start with a pound sign (#) as this indicates a room name.
 
 .ti 0
 3.2. Join message
@@ -136,9 +139,9 @@ Parameters: <room>{,<room>}
 
 The JOIN command is used to join a room or list of rooms. If the rooms do
 not already exist, the server will create them. On success, the server
-should respond to the original client with the original command, and to
-each connected client in each room with <nickname> JOIN <room>. If the
-room name is invalid, the server should instead respond with ERROR ROOM.
+should respond to the original client and to each connected client in each
+room with JOIN <room> <nickname>. If the room name is invalid, the server
+should instead respond with an ERROR message.
 
 .ti 0
 3.3. Leave message
@@ -147,8 +150,8 @@ room name is invalid, the server should instead respond with ERROR ROOM.
 Parameters: <room>{,<room>}
 
 The PART command is used to leave a room or list of rooms. The server
-must respond with PART followed by the rooms successfully left, and to
-other clients in each room with <nickname> PART <room>.
+must respond with PART <room> <nickname> to the client and each client
+in each related room.
 
 .ti 0
 3.4. List message
@@ -175,8 +178,8 @@ list of names.
 Parameters: <receiver>{,<receiver>} <text to be sent>
 
 The PRIVMSG command is used to send a message to a list of rooms or clients.
-The server should send <sender> PRIVMSG <text to be sent> to each appropriate
-client or room.
+The server should send PRIVMSG <channel or nick> <sender> <text to be sent>
+to each appropriate client or room.
 
 .ti 0
 3.7. Quit message
@@ -198,13 +201,25 @@ messages should be sent from the server periodically, and the recipient
 the other party should close the connection.
 
 .ti 0
-4.  Security Considerations
+4. Server messages
+
+.ti 0
+4.1. ERROR message
+
+   Command: ERROR
+Parameters: <error text>
+
+The ERROR command should be sent by the server in case of a command that
+cannot be parsed or is otherwise inappropriate.
+
+.ti 0
+5.  Security Considerations
 
 All messages are sent in plaintext. Any encryption must be performed by the
 user of the client.
 
 .ti 0
-5.  IANA Considerations
+6.  IANA Considerations
 
 No actions are required from IANA as result of the publication of
 this document.
@@ -216,10 +231,10 @@ this document.
 .fi
 .in 3                                 \" Restore normal indent
 .ti 0
-6.  References
+7.  References
 
 .ti 0
-6.1.  Normative References
+7.1.  Normative References
 
 .in 14
 .ti 3
@@ -236,7 +251,7 @@ Specifications: ABNF", RFC 4234, October 2005.
 .\" ftp://ftp.rfc-editor.org/in-notes/rfc-ref.txt
 
 .ti 0
-6.2.  Informative References
+7.2.  Informative References
 
 .ti 3
 [RFC1459]  Oikarnen, J. and P Reed, "Internet Relay Chat Protocol",

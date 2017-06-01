@@ -11,7 +11,6 @@ import curses.wrapper
 from twisted.internet import reactor
 from twisted.internet.protocol import ClientFactory
 from twisted.protocols.basic import LineReceiver
-from twisted.python import log
 
 
 class TextTooLongError(Exception):
@@ -39,27 +38,30 @@ class IRC(LineReceiver):
     nick = None
 
     def __init__(self, screenObj):
-        # screenObj should be 'stdscr' or a curses window/pad object
         self.screenObj = screenObj
-        # for testing (hacky way around initial bad design for this example) :)
         self.screenObj.irc = self
 
     def lineReceived(self, line):
-        """ When receiving a line, add it to the output buffer """
-        #self.screenObj.addLine("DEBUG got line: {}".format(line))
+        # Parse the line we received and format it appropriately
         cmd = line.strip().partition(" ")
+        if cmd[0] == "PING":
+            self.sendLine("PONG")
         if cmd[0] == "NICK":
             self.nick = cmd[2]
             self.screenObj.addLine("You are now known as {}".format(cmd[2]))
         elif cmd[0] == "JOIN":
-            self.screenObj.addLine("Joined {}".format(cmd[2]))
+            split = cmd[2].partition(" ")
+            self.screenObj.addLine("{} joined {}".format(split[2], split[0]))
         elif cmd[0] == "PART":
-            self.screenObj.addLine("Left {}".format(cmd[2]))
+            split = cmd[2].partition(" ")
+            self.screenObj.addLine("{} left {}".format(split[2], split[0]))
         elif cmd[0] == "LIST":
-            self.screenObj.addLine("Channels on this server: {}".format(cmd[2]))
+            self.screenObj.addLine(
+                "Channels on this server: {}".format(cmd[2]))
         elif cmd[0] == "NAMES":
             split = cmd[2].partition(" ")
-            self.screenObj.addLine("In channel {}: {}".format(split[0], split[2]))
+            self.screenObj.addLine(
+                "In channel {}: {}".format(split[0], split[2]))
         elif cmd[0] == "PRIVMSG":
             split = cmd[2].partition(" ")
             chan = split[0]
@@ -68,7 +70,8 @@ class IRC(LineReceiver):
             if chan == self.nick:
                 self.screenObj.addLine("{} > {}".format(sender, received))
             else:
-                self.screenObj.addLine("{}: {} > {}".format(chan, sender, received))
+                self.screenObj.addLine(
+                    "{}: {} > {}".format(chan, sender, received))
         elif cmd[0] == "ERROR":
             self.screenObj.addLine(cmd[2], 3)
 
@@ -99,7 +102,7 @@ class IRCFactory(ClientFactory):
 class Screen(CursesStdIO):
     def __init__(self, stdscr):
         self.timer = 0
-        self.statusText = "TEST CURSES APP -"
+        self.statusText = "IRC -"
         self.searchText = ''
         self.stdscr = stdscr
 
@@ -125,7 +128,7 @@ class Screen(CursesStdIO):
         self.paintStatus(self.statusText)
 
     def connectionLost(self, reason):
-        self.addLine("* DISCONNECTED *")
+        self.close()
 
     def addLine(self, text, color=2):
         """ add a line to the internal list of lines"""
@@ -174,7 +177,10 @@ class Screen(CursesStdIO):
 
         else:
             if len(self.searchText) == self.cols - 2: return
-            self.searchText = self.searchText + chr(c)
+            try:
+                self.searchText = self.searchText + chr(c)
+            except ValueError:
+                pass
 
         self.stdscr.addstr(self.rows - 1, 0, self.searchText +
                            (' ' * (self.cols - len(self.searchText) - 2)))
@@ -196,7 +202,8 @@ class Screen(CursesStdIO):
         if cmd[0] == "/msg":
             self.irc.sendLine("PRIVMSG {}".format(cmd[2]))
         elif cmd[0] == "/quit":
-            self.irc.transport.loseConnection()
+            self.irc.sendLine("QUIT")
+            self.connectionLost()
         elif cmd[0] == "/nick":
             self.irc.sendLine("NICK {}".format(cmd[2]))
         elif cmd[0] == "/join":
